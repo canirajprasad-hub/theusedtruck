@@ -1,0 +1,5 @@
+{
+  "name": "The Used Truck",
+  "description": "A professional marketplace for second-hand trucks with admin controls, loan options, and real-time callback tracking using Firebase and Supabase.",
+  "requestFramePermissions": []
+}

@@ -1,0 +1,155 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: trucks
+    // Document ID: auto-generated
+    // Fields:
+    //   - make: string (required)
+    //   - model: string (required)
+    //   - year: number (required)
+    //   - price: number (required)
+    //   - mileage: number (required)
+    //   - imageUrl: string (required)
+    //   - imageUrls: list (optional)
+    //   - description: string (optional)
+    //   - loanAvailable: bool (optional)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: callbacks
+    // Document ID: auto-generated
+    // Fields:
+    //   - name: string (required)
+    //   - mobile: string (required)
+    //   - email: string (optional)
+    //   - truckId: string (required)
+    //   - truckModel: string (required)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: sell_requests
+    // Document ID: auto-generated
+    // Fields:
+    //   - name: string (required)
+    //   - mobile: string (required)
+    //   - truckMake: string (required)
+    //   - truckModel: string (required)
+    //   - truckYear: string (optional)
+    //   - kmRun: string (optional)
+    //   - expectedPrice: string (optional)
+    //   - location: string (optional)
+    //   - images: list (optional)
+    //   - createdAt: timestamp (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          ((request.auth.token.email == "canirajprasad@gmail.com" || request.auth.token.email == "theusedtruck@gmail.com") && request.auth.token.email_verified == true));
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidString(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+        request.resource.data[field].size() >= minLen &&
+        request.resource.data[field].size() <= maxLen;
+    }
+
+    function isValidNumber(field, minVal) {
+      return request.resource.data[field] is number &&
+        request.resource.data[field] >= minVal;
+    }
+
+    function isValidTimestamp(field) {
+      return request.resource.data[field] is timestamp;
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidTruck(data) {
+      return hasRequiredFields(['make', 'model', 'year', 'price', 'mileage', 'imageUrl', 'createdAt']) &&
+        data.make is string && data.make.size() > 0 && data.make.size() < 100 &&
+        data.model is string && data.model.size() > 0 && data.model.size() < 100 &&
+        data.year is number && data.year > 1900 && data.year < 2100 &&
+        data.price is number && data.price >= 0 &&
+        data.mileage is number && data.mileage >= 0 &&
+        data.imageUrl is string && data.imageUrl.size() > 0 &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidCallback(data) {
+      return hasRequiredFields(['name', 'mobile', 'truckId', 'truckModel', 'createdAt']) &&
+        data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+        data.mobile is string && data.mobile.size() >= 10 && data.mobile.size() <= 15 &&
+        data.truckId is string &&
+        data.truckModel is string &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidSellRequest(data) {
+      return hasRequiredFields(['name', 'mobile', 'truckMake', 'truckModel', 'createdAt']) &&
+        data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+        data.mobile is string && data.mobile.size() >= 10 && data.mobile.size() <= 15 &&
+        data.truckMake is string && data.truckMake.size() > 0 &&
+        data.truckModel is string && data.truckModel.size() > 0 &&
+        data.createdAt is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    // Trucks Collection
+    match /trucks/{truckId} {
+      allow read: if true; // Publicly readable
+      allow create: if isAdmin() && isValidTruck(request.resource.data);
+      allow update: if isAdmin() && isValidTruck(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // Callbacks Collection
+    match /callbacks/{callbackId} {
+      allow read: if isAdmin();
+      allow create: if isValidCallback(request.resource.data);
+      allow update: if isAdmin() && isValidCallback(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // Sell Requests Collection
+    match /sell_requests/{requestId} {
+      allow read: if isAdmin();
+      allow create: if isValidSellRequest(request.resource.data);
+      allow update: if isAdmin() && isValidSellRequest(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // Users Collection (for RBAC)
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == userId && request.resource.data.role == 'user';
+      allow update: if isAdmin(); // Only admins can change roles
+      allow delete: if isAdmin();
+    }
+  }
+}

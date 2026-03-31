@@ -1,0 +1,68 @@
+{
+  "entities": {
+    "Truck": {
+      "title": "Truck",
+      "description": "A truck in the inventory.",
+      "type": "object",
+      "properties": {
+        "make": { "type": "string", "description": "Manufacturer of the truck." },
+        "model": { "type": "string", "description": "Model of the truck." },
+        "year": { "type": "number", "description": "Manufacturing year." },
+        "price": { "type": "number", "description": "Selling price in INR." },
+        "mileage": { "type": "number", "description": "Kilometers driven." },
+        "imageUrl": { "type": "string", "description": "Primary image URL." },
+        "imageUrls": { "type": "array", "items": { "type": "string" }, "description": "Additional image URLs." },
+        "description": { "type": "string", "description": "Detailed description." },
+        "loanAvailable": { "type": "boolean", "description": "Whether loan options are available." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp." }
+      },
+      "required": ["make", "model", "year", "price", "mileage", "imageUrl", "createdAt"]
+    },
+    "Callback": {
+      "title": "Callback Request",
+      "description": "A request for a callback from a potential buyer.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "User's name." },
+        "mobile": { "type": "string", "description": "User's mobile number." },
+        "email": { "type": "string", "format": "email", "description": "User's email address." },
+        "truckId": { "type": "string", "description": "ID of the truck they are interested in." },
+        "truckModel": { "type": "string", "description": "Model of the truck for reference." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp." }
+      },
+      "required": ["name", "mobile", "createdAt"]
+    },
+    "SellRequest": {
+      "title": "Sell Request",
+      "description": "A request from a user to sell their truck.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Owner's name." },
+        "mobile": { "type": "string", "description": "Owner's mobile number." },
+        "truckMake": { "type": "string", "description": "Truck manufacturer." },
+        "truckModel": { "type": "string", "description": "Truck model." },
+        "truckYear": { "type": "string", "description": "Truck year." },
+        "kmRun": { "type": "string", "description": "Kilometers driven." },
+        "expectedPrice": { "type": "string", "description": "Expected selling price." },
+        "location": { "type": "string", "description": "Truck location." },
+        "images": { "type": "array", "items": { "type": "string" }, "description": "URLs of uploaded images." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp." }
+      },
+      "required": ["name", "mobile", "truckMake", "truckModel", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/trucks/{truckId}": {
+      "schema": "Truck",
+      "description": "Collection of trucks available for sale."
+    },
+    "/callbacks/{callbackId}": {
+      "schema": "Callback",
+      "description": "Collection of callback requests."
+    },
+    "/sell_requests/{requestId}": {
+      "schema": "SellRequest",
+      "description": "Collection of requests to sell trucks."
+    }
+  }
+}
