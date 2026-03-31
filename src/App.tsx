@@ -42,7 +42,12 @@ import {
   Upload,
   Loader2,
   Menu,
-  CheckCircle2
+  CheckCircle2,
+  Mail,
+  ShieldCheck,
+  BadgeCheck,
+  Users,
+  Zap
 } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
@@ -170,6 +175,7 @@ interface CallbackRequest {
   email: string;
   truckId?: string;
   truckModel?: string;
+  truckImage?: string;
   createdAt: any;
 }
 
@@ -250,7 +256,16 @@ const translations = {
     kmRun: "KM Run",
     additionalDetails: "Additional Details",
     submitValuation: "Get Professional Valuation",
-    noInventory: "No trucks in inventory yet."
+    noInventory: "No trucks in inventory yet.",
+    whyUsTitle: "Why Choose Us?",
+    whyUsReason1: "Quality Assurance",
+    whyUsDesc1: "Every truck in our inventory undergoes a rigorous 100-point quality check to ensure it's road-ready.",
+    whyUsReason2: "Transparent Pricing",
+    whyUsDesc2: "No hidden costs. We provide fair market valuations and clear documentation for every transaction.",
+    whyUsReason3: "Expert Support",
+    whyUsDesc3: "Our team of industry veterans is here to guide you through selection, financing, and ownership.",
+    whyUsReason4: "Fast Financing",
+    whyUsDesc4: "Get access to quick and flexible loan options through our network of trusted financial partners."
   },
   hi: {
     brand: "द यूज्ड ट्रक",
@@ -315,7 +330,16 @@ const translations = {
     kmRun: "किमी चला हुआ",
     additionalDetails: "अतिरिक्त विवरण",
     submitValuation: "प्रोफेशनल मूल्यांकन प्राप्त करें",
-    noInventory: "इन्वेंट्री में अभी तक कोई ट्रक नहीं है।"
+    noInventory: "इन्वेंट्री में अभी तक कोई ट्रक नहीं है।",
+    whyUsTitle: "हमें क्यों चुनें?",
+    whyUsReason1: "गुणवत्ता आश्वासन",
+    whyUsDesc1: "हमारी इन्वेंट्री के प्रत्येक ट्रक की 100-पॉइंट गुणवत्ता जांच की जाती है ताकि यह सुनिश्चित हो सके कि यह सड़क के लिए तैयार है।",
+    whyUsReason2: "पारदर्शी मूल्य निर्धारण",
+    whyUsDesc2: "कोई छिपी हुई लागत नहीं। हम प्रत्येक लेनदेन के लिए उचित बाजार मूल्यांकन और स्पष्ट दस्तावेज प्रदान करते हैं।",
+    whyUsReason3: "विशेषज्ञ सहायता",
+    whyUsDesc3: "उद्योग के दिग्गजों की हमारी टीम चयन, वित्तपोषण और स्वामित्व के माध्यम से आपका मार्गदर्शन करने के लिए यहां है।",
+    whyUsReason4: "त्वरित वित्तपोषण",
+    whyUsDesc4: "हमारे विश्वसनीय वित्तीय भागीदारों के नेटवर्क के माध्यम से त्वरित और लचीले ऋण विकल्पों तक पहुंच प्राप्त करें।"
   }
 };
 
@@ -621,7 +645,7 @@ const AdminPanel = ({ user, lang, onLogin }: { user: User | null, lang: 'en' | '
     make: '', model: '', year: 2024, price: 0, mileage: 0, description: '', imageUrl: '', imageUrls: ['', '', '', '', ''], loanAvailable: true
   });
   const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<{ id: string, type: 'truck' | 'sell_request' } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string, type: 'truck' | 'sell_request' | 'callback' } | null>(null);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
     const file = e.target.files?.[0];
@@ -826,6 +850,18 @@ const AdminPanel = ({ user, lang, onLogin }: { user: User | null, lang: 'en' | '
     }
   }
 
+  async function handleDeleteCallback(id: string) {
+    console.log("handleDeleteCallback called for id:", id);
+    try {
+      await deleteDoc(doc(db, 'callbacks', id));
+      toast.success("Callback request removed.");
+      setConfirmDelete(null);
+    } catch (err) {
+      console.error("Delete callback error:", err);
+      handleFirestoreError(err, OperationType.DELETE, `callbacks/${id}`);
+    }
+  }
+
   if (!user || (user.email !== "theusedtruck@gmail.com" && user.email !== "canirajprasad@gmail.com")) {
     return (
       <div className="max-w-xl mx-auto px-4 py-20 text-center">
@@ -916,11 +952,26 @@ const AdminPanel = ({ user, lang, onLogin }: { user: User | null, lang: 'en' | '
               <div className="space-y-4">
                 {callbacks.map(c => (
                   <div key={c.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-bold text-gray-900">{c.name}</h4>
-                      <span className="text-[10px] uppercase tracking-widest text-gray-400 font-bold">
-                        {c.createdAt?.toDate().toLocaleDateString()}
-                      </span>
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1">
+                        <h4 className="font-bold text-gray-900">{c.name}</h4>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[10px] uppercase tracking-widest text-gray-400 font-bold">
+                            {c.createdAt?.toDate().toLocaleDateString()}
+                          </span>
+                          <button 
+                            onClick={() => setConfirmDelete({ id: c.id, type: 'callback' })} 
+                            className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1 rounded-lg transition-all"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                      {c.truckImage && (
+                        <div className="w-12 h-12 rounded-lg overflow-hidden border border-gray-100 ml-4">
+                          <img src={c.truckImage} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        </div>
+                      )}
                     </div>
                     <p className="text-sm text-gray-600 mb-1 flex items-center space-x-2">
                       <Phone className="w-3 h-3 text-orange-600" />
@@ -1191,7 +1242,11 @@ const AdminPanel = ({ user, lang, onLogin }: { user: User | null, lang: 'en' | '
                   Cancel
                 </button>
                 <button 
-                  onClick={() => confirmDelete.type === 'truck' ? handleDelete(confirmDelete.id) : handleDeleteSellRequest(confirmDelete.id)}
+                  onClick={() => {
+                    if (confirmDelete.type === 'truck') handleDelete(confirmDelete.id);
+                    else if (confirmDelete.type === 'sell_request') handleDeleteSellRequest(confirmDelete.id);
+                    else if (confirmDelete.type === 'callback') handleDeleteCallback(confirmDelete.id);
+                  }}
                   className="flex-1 py-4 bg-red-600 text-white rounded-2xl font-bold hover:bg-red-700 transition-all shadow-lg shadow-red-600/20"
                 >
                   Delete
@@ -1506,6 +1561,7 @@ const Home = ({ lang }: { lang: 'en' | 'hi' }) => {
         ...callbackForm,
         truckId: selectedTruck?.id || 'general',
         truckModel: selectedTruck ? `${selectedTruck.make} ${selectedTruck.model}` : 'General Enquiry',
+        truckImage: selectedTruck?.imageUrl || '',
         createdAt: serverTimestamp()
       });
 
@@ -1770,6 +1826,11 @@ export default function App() {
   useEffect(() => {
     testFirestoreConnection(db);
     const unsubscribe = onAuthStateChanged(auth, (u) => {
+      if (u) {
+        console.log("User logged in:", u.email, "Verified:", u.emailVerified);
+      } else {
+        console.log("User logged out");
+      }
       setUser(u);
       setLoading(false);
     });
@@ -1782,7 +1843,11 @@ export default function App() {
       toast.success("Logged in successfully!");
     } catch (err: any) {
       console.error("Login Error:", err);
-      toast.error(`Login failed: ${err.message || "Unknown error"}`);
+      if (err.code === 'auth/unauthorized-domain') {
+        toast.error("Domain not authorized. Please add your Netlify domain to Firebase Console -> Authentication -> Settings -> Authorized domains.");
+      } else {
+        toast.error(`Login failed: ${err.message || "Unknown error"}`);
+      }
     }
   };
 
@@ -1813,14 +1878,109 @@ export default function App() {
               <Route path="/quick-buy" element={<QuickBuy lang={lang} />} />
               <Route path="/admin" element={<AdminPanel user={user} lang={lang} onLogin={handleLogin} />} />
             </Routes>
-          </main>
-          <footer className="bg-gray-50 py-12 mt-20 border-t border-gray-100 transition-colors">
-            <div className="max-w-7xl mx-auto px-4 text-center">
-              <div className="flex items-center justify-center space-x-2 mb-4 opacity-50">
-                <Truck className="w-6 h-6" />
-                <span className="text-lg font-bold">{t.brand}</span>
+            <section className="py-24 bg-white">
+              <div className="max-w-7xl mx-auto px-4">
+                <div className="text-center mb-16">
+                  <h2 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">{t.whyUsTitle}</h2>
+                  <div className="w-24 h-1.5 bg-orange-600 mx-auto rounded-full" />
+                </div>
+                
+                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                  {[
+                    { icon: ShieldCheck, title: t.whyUsReason1, desc: t.whyUsDesc1 },
+                    { icon: BadgeCheck, title: t.whyUsReason2, desc: t.whyUsDesc2 },
+                    { icon: Users, title: t.whyUsReason3, desc: t.whyUsDesc3 },
+                    { icon: Zap, title: t.whyUsReason4, desc: t.whyUsDesc4 }
+                  ].map((item, idx) => (
+                    <motion.div 
+                      key={idx}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: idx * 0.1 }}
+                      className="p-8 rounded-[2rem] bg-gray-50 border border-gray-100 hover:border-orange-200 hover:bg-orange-50/30 transition-all duration-500 group"
+                    >
+                      <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-sm group-hover:bg-orange-600 transition-colors duration-500">
+                        <item.icon className="w-7 h-7 text-orange-600 group-hover:text-white transition-colors duration-500" />
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900 mb-3">{item.title}</h3>
+                      <p className="text-gray-600 leading-relaxed text-sm">{item.desc}</p>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
-              <p className="text-sm text-gray-400">© 2026 {t.brand} Marketplace. All rights reserved.</p>
+            </section>
+          </main>
+          <footer className="bg-gray-900 text-white py-24 mt-20 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 via-orange-600 to-orange-500" />
+            <div className="max-w-7xl mx-auto px-4 relative z-10">
+              <div className="grid lg:grid-cols-2 gap-20 items-start mb-20">
+                <div>
+                  <div className="flex items-center space-x-3 mb-8">
+                    <div className="w-12 h-12 bg-orange-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-orange-600/40">
+                      <Truck className="w-7 h-7 text-white" />
+                    </div>
+                    <span className="text-3xl font-black tracking-tight">{t.brand}</span>
+                  </div>
+                  <h2 className="text-5xl font-black mb-6 tracking-tight leading-tight">
+                    {lang === 'en' ? 'Let\'s Get You on the Road.' : 'चलिए आपको सड़क पर उतारते हैं।'}
+                  </h2>
+                  <p className="text-xl text-gray-400 max-w-md italic serif leading-relaxed">
+                    {lang === 'en' 
+                      ? "Whether you're looking to buy your next fleet or sell your current one, our experts are just a call away." 
+                      : "चाहे आप अपना अगला बेड़ा खरीदना चाह रहे हों या अपना वर्तमान बेचना चाह रहे हों, हमारे विशेषज्ञ बस एक कॉल की दूरी पर हैं।"}
+                  </p>
+                </div>
+                
+                <div className="grid sm:grid-cols-2 gap-6">
+                  <div className="sm:col-span-2 bg-white/5 border border-white/10 p-8 rounded-[2.5rem] backdrop-blur-md">
+                    <p className="text-[10px] font-bold text-orange-500 uppercase tracking-[0.2em] mb-6">Direct Inquiries</p>
+                    <div className="space-y-8">
+                      <a href="mailto:theusedtruck@gmail.com" className="flex items-center group">
+                        <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mr-5 group-hover:bg-orange-600 transition-all duration-500">
+                          <Mail className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Email Support</p>
+                          <p className="text-xl font-bold group-hover:text-orange-500 transition-colors">theusedtruck@gmail.com</p>
+                        </div>
+                      </a>
+                      
+                      <div className="h-px bg-white/10 w-full" />
+                      
+                      <div className="grid sm:grid-cols-2 gap-8">
+                        <a href="tel:+919920088484" className="flex items-center group">
+                          <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mr-5 group-hover:bg-orange-600 transition-all duration-500">
+                            <Phone className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Sales Primary</p>
+                            <p className="text-xl font-bold group-hover:text-orange-500 transition-colors">+91 9920088484</p>
+                          </div>
+                        </a>
+                        <a href="tel:+919822501408" className="flex items-center group">
+                          <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mr-5 group-hover:bg-orange-600 transition-all duration-500">
+                            <Phone className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Sales Secondary</p>
+                            <p className="text-xl font-bold group-hover:text-orange-500 transition-colors">+91 9822501408</p>
+                          </div>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="pt-12 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-8">
+                <div className="flex items-center space-x-8 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                  <Link to="/" className="hover:text-white transition-colors">Home</Link>
+                  <Link to="/quick-buy" className="hover:text-white transition-colors">Sell Truck</Link>
+                  <Link to="/loans" className="hover:text-white transition-colors">Loan Options</Link>
+                </div>
+                <p className="text-sm text-gray-500 font-medium">© 2026 {t.brand} Marketplace. All rights reserved.</p>
+              </div>
             </div>
           </footer>
           <Toaster position="bottom-right" />
