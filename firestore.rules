@@ -35,8 +35,8 @@ service cloud.firestore {
     // Fields:
     //   - name: string (required)
     //   - mobile: string (required)
-    //   - truckMake: string (required)
-    //   - truckModel: string (required)
+    //   - company: string (required)
+    //   - model: string (required)
     //   - truckYear: string (optional)
     //   - kmRun: string (optional)
     //   - expectedPrice: string (optional)
@@ -101,18 +101,18 @@ service cloud.firestore {
     function isValidCallback(data) {
       return hasRequiredFields(['name', 'mobile', 'truckId', 'truckModel', 'createdAt']) &&
         data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-        data.mobile is string && data.mobile.size() >= 10 && data.mobile.size() <= 15 &&
+        data.mobile is string && data.mobile.matches("^[0-9]{10}$") &&
         data.truckId is string &&
         data.truckModel is string &&
         data.createdAt is timestamp;
     }
 
     function isValidSellRequest(data) {
-      return hasRequiredFields(['name', 'mobile', 'truckMake', 'truckModel', 'createdAt']) &&
+      return hasRequiredFields(['name', 'mobile', 'company', 'model', 'createdAt']) &&
         data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-        data.mobile is string && data.mobile.size() >= 10 && data.mobile.size() <= 15 &&
-        data.truckMake is string && data.truckMake.size() > 0 &&
-        data.truckModel is string && data.truckModel.size() > 0 &&
+        data.mobile is string && data.mobile.matches("^[0-9]{10}$") &&
+        data.company is string && data.company.size() > 0 &&
+        data.model is string && data.model.size() > 0 &&
         data.createdAt is timestamp;
     }
 

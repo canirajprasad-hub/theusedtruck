@@ -1421,9 +1421,14 @@ const QuickBuy = ({ lang }: { lang: 'en' | 'hi' }) => {
               <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">{t.mobileNumber}</label>
               <input 
                 required type="tel"
+                maxLength={10}
                 className="w-full p-4 bg-gray-50 rounded-2xl border border-transparent focus:border-orange-500 focus:ring-0 transition-all text-gray-900"
-                placeholder="Enter mobile number"
-                value={form.mobile} onChange={e => setForm({...form, mobile: e.target.value})}
+                placeholder="Enter 10-digit mobile number"
+                value={form.mobile} 
+                onChange={e => {
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                  setForm({...form, mobile: val});
+                }}
               />
             </div>
           </div>
@@ -1788,9 +1793,14 @@ const Home = ({ lang }: { lang: 'en' | 'hi' }) => {
                   <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">{t.mobileNumber}</label>
                   <input 
                     required type="tel"
+                    maxLength={10}
                     className="w-full p-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-orange-500"
-                    placeholder="Enter mobile number"
-                    value={callbackForm.mobile} onChange={e => setCallbackForm({...callbackForm, mobile: e.target.value})}
+                    placeholder="Enter 10-digit mobile number"
+                    value={callbackForm.mobile} 
+                    onChange={e => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setCallbackForm({...callbackForm, mobile: val});
+                    }}
                   />
                 </div>
                 <div>
